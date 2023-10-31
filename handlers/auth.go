@@ -17,8 +17,7 @@ type User models.User
 func Login(c *fiber.Ctx) error {
 	json := new(contracts.LoginRequest)
 	if err := c.BodyParser(json); err != nil {
-		fmt.Println(err)
-		return c.JSON(fiber.Map{
+		return c.Status(400).JSON(fiber.Map{
 			"code":    400,
 			"message": "Invalid JSON",
 			"error":   err.Error(),
@@ -28,27 +27,33 @@ func Login(c *fiber.Ctx) error {
 	found := &models.User{Email: json.Email}
 	err := repositories.GetUserByEmail(found)
 	if err != nil {
-		return c.JSON("Wrong username or password")
+		return c.Status(401).JSON(fiber.Map{
+			"code":    401,
+			"message": "Wrong email or password",
+			"error":   err.Error(),
+		})
 	}
 
 	if encryption.ComparePasswords(found.Hash, []byte(json.Password)) {
 		token, _ := jwt.GenerateJwtToken(found.Id, found.Email, found.Name)
-		var response = contracts.AuthResponse{
-			Code:    200,
-			Message: "User successfully logged",
-			Token:   token,
-		}
-		return c.JSON(response)
+		return c.Status(200).JSON(fiber.Map{
+			"code":    200,
+			"message": "User successfully logged",
+			"token":   token,
+		})
 	} else {
-		return c.JSON("Wrong username or password")
+		return c.Status(401).JSON(fiber.Map{
+			"code":    401,
+			"message": "Wrong email or password",
+			"error":   err.Error(),
+		})
 	}
 }
 
 func Signup(c *fiber.Ctx) error {
 	json := new(contracts.SignupRequest)
 	if err := c.BodyParser(json); err != nil {
-		fmt.Println(err)
-		return c.JSON(fiber.Map{
+		return c.Status(400).JSON(fiber.Map{
 			"code":    400,
 			"message": "Invalid JSON",
 			"error":   err.Error(),
@@ -56,10 +61,15 @@ func Signup(c *fiber.Ctx) error {
 	}
 
 	if json.Password != json.PasswordRepeat {
-		return c.JSON("passwords do not match")
+		return c.Status(401).JSON(fiber.Map{
+			"code":    401,
+			"message": "Passwords do not match",
+			"error":   "INVALID_PASSWORD",
+		})
 	}
-	fmt.Println(json)
+
 	hash, _ := encryption.GenerateHash([]byte(json.Password))
+
 	var newUser = &models.User{
 		Email:   json.Email,
 		Hash:    hash,
@@ -68,30 +78,28 @@ func Signup(c *fiber.Ctx) error {
 	}
 
 	err := repositories.CreateNewUser(newUser)
+
 	if err != nil {
-		return c.JSON(fiber.Map{
+		return c.Status(400).JSON(fiber.Map{
 			"code":    400,
-			"message": "Invalid JSON",
-			"error":   err.Error(),
+			"message": "Something went wrong",
+			"error":   "BAD_REQUEST",
 		})
 	}
 
-	token, _ := jwt.GenerateJwtToken(newUser.Id, json.Email, json.Name)
+	return c.Status(200).JSON(fiber.Map{
+		"code":    200,
+		"message": "User successfully created",
+		"user":    newUser,
+	})
 
-	var response = contracts.AuthResponse{
-		Code:    200,
-		Message: "User successfully created",
-		Token:   token,
-	}
-
-	return c.JSON(response)
 }
 
 func GoogleOAuth(c *fiber.Ctx) error {
 	json := new(contracts.GoogleOAuthRequest)
 	if err := c.BodyParser(json); err != nil {
 		fmt.Println(err)
-		return c.JSON(fiber.Map{
+		return c.Status(400).JSON(fiber.Map{
 			"code":    400,
 			"message": "Invalid JSON",
 			"error":   err.Error(),
@@ -100,11 +108,10 @@ func GoogleOAuth(c *fiber.Ctx) error {
 
 	token := services.HandleGoogleOAuth(*json)
 
-	var response = contracts.AuthResponse{
-		Code:    200,
-		Message: "User successfully created",
-		Token:   token,
-	}
+	return c.Status(200).JSON(fiber.Map{
+		"code":    200,
+		"message": "User successfully logged",
+		"token":   token,
+	})
 
-	return c.JSON(response)
 }
