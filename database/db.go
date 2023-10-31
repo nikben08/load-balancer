@@ -2,8 +2,8 @@ package database
 
 import (
 	"fmt"
+	"load-balancer/models"
 	"log"
-	"proxolab-ecommerce-authorization/models"
 
 	_ "github.com/lib/pq"
 	"gorm.io/driver/postgres"

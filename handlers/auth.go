@@ -11,9 +11,6 @@ import (
 )
 
 type User models.User
-type UserClaim models.UserClaim
-type PhoneNumber models.PhoneNumber
-type Address models.Address
 
 func (h handler) Login(c *fiber.Ctx) error {
 	json := new(contracts.LoginRequest)
@@ -26,25 +23,26 @@ func (h handler) Login(c *fiber.Ctx) error {
 		})
 	}
 
-	user := User{Email: json.Email, Hash: encryption.GenerateHash(json.Password)}
+	hash, err := encryption.GenerateHash(json.Password)
+	if err != nil {
+		return c.JSON(fiber.Map{
+			"code":    400,
+			"message": "Invalid JSON",
+			"error":   err.Error(),
+		})
+	}
+	user := User{Email: json.Email, Hash: hash}
 	found := User{}
 	if result := h.DB.Where("email = ?", user.Email).First(&found); result.Error != nil {
 		fmt.Println("error")
 	}
 	if found.Hash == user.Hash {
-		var userClaim models.UserClaim
-		if result := h.DB.Where("user_id = ?", user.ID).First(&userClaim); result.Error != nil {
-			fmt.Println("error")
-		}
-
-		token, _ := jwt.GenerateJwtToken(found.ID, found.Email, found.Name, userClaim.AccessLevel)
-
+		token, _ := jwt.GenerateJwtToken(found.Id, found.Email, found.Name)
 		var response = contracts.AuthResponse{
 			Code:    200,
 			Message: "User successfully logged",
 			Token:   token,
 		}
-
 		return c.JSON(response)
 	} else {
 		return c.JSON("Wrong username or password")
@@ -66,18 +64,19 @@ func (h handler) Signup(c *fiber.Ctx) error {
 		return c.JSON("passwords do not match")
 	}
 
+	hash, _ := encryption.GenerateHash(json.Password)
 	var newUser = User{
 		Email:   json.Email,
-		Hash:    encryption.GenerateHash(json.Password),
+		Hash:    hash,
 		Name:    json.Name,
-		Sername: json.Sername,
+		Surname: json.Surname,
 	}
 
 	if result := h.DB.Create(&newUser); result.Error != nil {
 		fmt.Println("error")
 	}
 
-	token, _ := jwt.GenerateJwtToken(newUser.ID, json.Email, json.Name, 0)
+	token, _ := jwt.GenerateJwtToken(newUser.Id, json.Email, json.Name)
 
 	var response = contracts.AuthResponse{
 		Code:    200,
