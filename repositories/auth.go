@@ -6,11 +6,11 @@ import (
 	"github.com/google/uuid"
 )
 
-func CreateUser(user models.User) (models.User, error) {
+func CreateNewUser(user *models.User) error {
 	if result := DB.Create(&user); result.Error != nil {
-		return models.User{}, result.Error
+		return result.Error
 	}
-	return user, nil
+	return nil
 }
 
 func CreateOAuthUser(oauth models.OAuthUser) (models.OAuthUser, error) {

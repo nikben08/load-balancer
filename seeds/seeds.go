@@ -15,9 +15,11 @@ func OAuthProviders() []models.OAuthProvider {
 }
 
 func SuperUser() models.User {
+	password := "08112001"
+	hash, _ := encryption.GenerateHash([]byte(password))
 	var superUser = models.User{
 		Email:   "admin@gmail.com",
-		Hash:    encryption.GenerateHash("08112001"),
+		Hash:    hash,
 		Name:    "Tony",
 		Surname: "Ferguson",
 	}

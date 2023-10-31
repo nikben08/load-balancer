@@ -3,17 +3,19 @@ package database
 import (
 	"fmt"
 	"load-balancer/models"
+	"load-balancer/seeds"
 	"log"
+
+	"load-balancer/config"
 
 	_ "github.com/lib/pq"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
-	"honnef.co/go/tools/config"
 )
 
 func Init() *gorm.DB {
 	// Connect to database
-	dsn := fmt.Sprintf("host=%s user=%s password=%s port=%s", config.Config("DBHost"), config.Config("DBUsername"), config.Config("DBUserPassword"), config.Config("DBPort"))
+	dsn := fmt.Sprintf("host=%s user=%s password=%s port=%s", config.Config("POSTGRES_HOST"), config.Config("POSTGRES_USER"), config.Config("POSTGRES_PASSWORD"), config.Config("POSTGRES_PORT"))
 	DB, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
@@ -27,31 +29,27 @@ func Init() *gorm.DB {
 		panic(err)
 	}
 
-	dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", config.Config("DBHost"), config.Config("DBUsername"), config.Config("DBUserPassword"), config.Config("DBName"), config.Config("DBPort"))
+	dsn = fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", config.Config("POSTGRES_HOST"), config.Config("POSTGRES_USER"), config.Config("POSTGRES_PASSWORD"), config.Config("POSTGRES_DATABASE_NAME"), config.Config("POSTGRES_PORT"))
 	DB, err = gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Migrate tables
-	DB.AutoMigrate(&models.User{}, &models.Admin{})
+	DB.AutoMigrate(
+		&models.User{},
+		&models.OAuthProvider{},
+		&models.OAuthUser{},
+	)
 
 	// Create Super User
-	var user = &models.User{
-		Email: "admin@admin.com",
-		Hash:  "08f46d939d7ff7ebb1df9de1cc246135c7a8694cabf0e1c1cc67c50e12832f08",
-	}
-
+	var user = seeds.SuperUser()
 	if result := DB.Create(&user); result.Error != nil {
 		fmt.Println("Couldn't create super user")
 	}
 
-	var admin = &models.Admin{
-		UserID:      user.ID,
-		AccessLevel: 1,
-	}
-
-	if result := DB.Create(&admin); result.Error != nil {
+	var oAuthProvider = seeds.OAuthProviders()[0]
+	if result := DB.Create(&oAuthProvider); result.Error != nil {
 		fmt.Println("Couldn't create super user")
 	}
 

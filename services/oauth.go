@@ -21,13 +21,13 @@ func HandleGoogleOAuth(oAuthUser contracts.GoogleOAuthRequest) string {
 	token := "3333"
 
 	if !isOAuthUserExists && !isUserExists {
-		user := models.User{
+		user := &models.User{
 			Email:   oAuthUser.Email,
 			Name:    oAuthUser.Name,
 			Surname: oAuthUser.Surname,
 		}
 
-		user, err := repositories.CreateUser(user)
+		err := repositories.CreateNewUser(user)
 		if err != nil {
 			return err.Error()
 		}

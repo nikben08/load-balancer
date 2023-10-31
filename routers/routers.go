@@ -1,7 +1,7 @@
 package routers
 
 import (
-	"proxolab-ecommerce-authorization/handlers"
+	"load-balancer/handlers"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -13,5 +13,5 @@ func Initalize(app *fiber.App) {
 	auth.Post("/login", handlers.Login)
 
 	oauth := api.Group("/oauth")
-	oauth.Get("/google", handlers.GoogleOAuth)
+	oauth.Post("/google", handlers.GoogleOAuth)
 }
