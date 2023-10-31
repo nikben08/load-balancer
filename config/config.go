@@ -10,7 +10,6 @@ import (
 func GetPostgresDSN() string {
 	return "host=localhost user=postgres password=0811 dbname=users port=5432 sslmode=disable"
 }
-<<<<<<< HEAD
 
 func GetJwtSecretKey() string {
 	return os.Getenv("JWT_SECRET_KEY")
@@ -29,5 +28,3 @@ func Config(key string) string {
 	}
 	return os.Getenv(key)
 }
-=======
->>>>>>> 3e42eaab96636658b0510040657ebdb968aa0125
