@@ -4,6 +4,7 @@ import (
 	"load-balancer/contracts"
 	"load-balancer/models"
 	"load-balancer/repositories"
+	jwt "load-balancer/utils/jwt"
 
 	"github.com/google/uuid"
 	"golang.org/x/oauth2"
@@ -15,10 +16,9 @@ var (
 	oauthStateString = "pseudo-random"
 )
 
-func HandleGoogleOAuth(oAuthUser contracts.GoogleOAuthRequest) string {
+func HandleGoogleOAuth(oAuthUser contracts.GoogleOAuthRequest) (string, error) {
 	isOAuthUserExists, _ := repositories.WhetherUserExistInOAuth(oAuthUser.Id)
 	isUserExists, user := repositories.WhetherUserExistInUsers(oAuthUser.Email)
-	token := "3333"
 
 	if !isOAuthUserExists && !isUserExists {
 		user := &models.User{
@@ -29,7 +29,7 @@ func HandleGoogleOAuth(oAuthUser contracts.GoogleOAuthRequest) string {
 
 		err := repositories.CreateNewUser(user)
 		if err != nil {
-			return err.Error()
+			return "", err
 		}
 
 		oAuthProviderId, _ := repositories.GetOAuthProviderByName("Google")
@@ -39,6 +39,7 @@ func HandleGoogleOAuth(oAuthUser contracts.GoogleOAuthRequest) string {
 			OAuthUserId: uuid,
 			ProviderId:  oAuthProviderId,
 		})
+
 	}
 
 	if !isOAuthUserExists && isUserExists {
@@ -51,5 +52,14 @@ func HandleGoogleOAuth(oAuthUser contracts.GoogleOAuthRequest) string {
 		})
 	}
 
-	return token
+	err := repositories.GetUserByEmail(&user)
+	if err != nil {
+		return "", err
+	}
+
+	token, err := jwt.GenerateJwtToken(user.Id, user.Email, user.Name)
+	if err != nil {
+		return "", err
+	}
+	return token, nil
 }

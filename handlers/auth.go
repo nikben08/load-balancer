@@ -37,9 +37,9 @@ func Login(c *fiber.Ctx) error {
 	if encryption.ComparePasswords(found.Hash, []byte(json.Password)) {
 		token, _ := jwt.GenerateJwtToken(found.Id, found.Email, found.Name)
 		return c.Status(200).JSON(fiber.Map{
-			"code":    200,
-			"message": "User successfully logged",
-			"token":   token,
+			"code":         200,
+			"message":      "User successfully logged",
+			"access_token": token,
 		})
 	} else {
 		return c.Status(401).JSON(fiber.Map{
@@ -96,6 +96,7 @@ func Signup(c *fiber.Ctx) error {
 }
 
 func GoogleOAuth(c *fiber.Ctx) error {
+	fmt.Println(c)
 	json := new(contracts.GoogleOAuthRequest)
 	if err := c.BodyParser(json); err != nil {
 		fmt.Println(err)
@@ -105,13 +106,23 @@ func GoogleOAuth(c *fiber.Ctx) error {
 			"error":   err.Error(),
 		})
 	}
+	fmt.Println(json.Email)
+	fmt.Println("1223")
 
-	token := services.HandleGoogleOAuth(*json)
+	token, err := services.HandleGoogleOAuth(*json)
+
+	if err != nil {
+		return c.Status(400).JSON(fiber.Map{
+			"code":    400,
+			"message": "Something went wrong",
+			"error":   "BAD_REQUEST",
+		})
+	}
 
 	return c.Status(200).JSON(fiber.Map{
-		"code":    200,
-		"message": "User successfully logged",
-		"token":   token,
+		"code":         200,
+		"message":      "User successfully logged",
+		"access_token": token,
 	})
 
 }
